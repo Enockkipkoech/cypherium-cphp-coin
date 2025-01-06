@@ -22,7 +22,7 @@ contract CypherPupTest is Test {
         );
     }
 
-    function test_getPauseStatus() public {
+    function test_getPauseStatus() public view {
         bool isPaused = cypherPup.paused();
         console.log("Is CypherPup paused? ", isPaused);
     }
