@@ -18,7 +18,7 @@ update:; forge update
 build:; forge build
 
 # Test the project
-test:; forge test -vvvv --rpc-url $(RPC_URL) --gas-report
+test:; forge test  --rpc-url $(RPC_URL) --gas-report -vvvv
 
 # Snapshot the project
 snapshot:; forge snapshot
@@ -27,8 +27,8 @@ snapshot:; forge snapshot
 anvil:; forge anvil --fork-url $(RPC_URL)
 
 # Deploy the project
-testnet:; forge script script/CypherPup.s.sol --rpc-url $(RPC_URL) --private-key $(OWNER_PRIVATE_KEY) --broadcast -vvvv
-simulate:; forge script script/CypherPup.s.sol:CypherPup --rpc-url $(RPC_URL)  -vvvv
+testnet:; forge script script/CypherPup.s.sol --rpc-url $(RPC_URL) --etherscan-api-key $(ETHERSCAN_API_KEY) --verify --private-key $(OWNER_PRIVATE_KEY) --broadcast -vvvv
+simulate:; forge script script/CypherPup.s.sol:CypherPupScript --rpc-url $(RPC_URL)  -vvvv
 
 
  # REFERENCE FOR DEPLOYING A CONTRACT

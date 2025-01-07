@@ -8,16 +8,33 @@ contract CypherPupScript is Script {
     CypherPup public cypherPup;
 
     function setUp() public {
-        address owner = vm.envAddress("OWNER_ADDRESS");
-        address multisigWallet = vm.envAddress("MULTISIG_WALLET");
-        address liquidityWallet = vm.envAddress("LIQUIDITY_WALLET");
+        // address _owner = vm.envAddress("OWNER_ADDRESS");
+        address _multisigWallet = vm.envAddress("MULTISIG_WALLET");
+        address _liquidityWallet = vm.envAddress("LIQUIDITY_WALLET");
+        address _publicSale = makeAddr("_publicSale");
+        address _communityRewards = makeAddr("_communityRewards");
+        address _liquidityPools = makeAddr("_liquidityPools");
+        address _developmentFund = makeAddr("_developmentFund");
+        address _marketingPartnership = makeAddr("_marketingPartnership");
+        address _teamAdvisors = makeAddr("_teamAdvisors");
+        address _charitableFund = makeAddr("_charitableFund");
 
-        cypherPup = new CypherPup(liquidityWallet, multisigWallet);
+        cypherPup = new CypherPup(
+            _multisigWallet,
+            _liquidityWallet,
+            _publicSale,
+            _communityRewards,
+            _liquidityPools,
+            _developmentFund,
+            _marketingPartnership,
+            _teamAdvisors,
+            _charitableFund
+        );
         console.log(
             "CypherPup contract deployed at: ",
             address(cypherPup),
             " with owner: ",
-            owner
+            _multisigWallet
         );
     }
 

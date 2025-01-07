@@ -2,48 +2,187 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
-contract CypherPup is ERC20, ERC20Burnable, Ownable, Pausable {
+contract CypherPup is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl {
+    // TOKENOMICS
     uint256 private constant TOTAL_SUPPLY = 50_000_000_000 * 10 ** 18; // 50 billion tokens
-    uint256 public constant MAX_WALLET_CAP = (TOTAL_SUPPLY * 2) / 100; // 2% of total supply
-    uint256 public constant TRANSACTION_LIMIT = (TOTAL_SUPPLY * 5) / 1000; // 0.5% of total supply
+    uint256 public constant FEE_DENOMINATOR = 100;
 
     uint256 public redistributionFee = 1; // 1%
     uint256 public burnFee = 1; // 1%
-    uint256 private constant FEE_DENOMINATOR = 100;
 
+    // OWNERSHIP
     address public liquidityWallet;
+    address public multisigWallet;
     mapping(address => bool) private excludedFromFees;
+    address public multisigOwner;
+
+    // WHITELISTS
+    mapping(address => uint8) public whitelist;
+
+    // DISTRIBUTION WALLETS
+    address public publicSaleWallet;
+    address public communityRewardsWallet;
+    address public liquidityPoolsWallet;
+    address public developmentFundWallet;
+    address public marketingPartnershipWallet;
+    address public teamAdvisorsWallet;
+    address public charitableFundWallet;
+
+    // EVENTS
+    event WhitelistUpdated(address account, uint8 category, bool status);
+    event TokensDistributed(
+        uint256 totalAmount,
+        uint256 publicSaleAmount,
+        uint256 communityRewardsAmount,
+        uint256 liquidityPoolsAmount,
+        uint256 developmentFundAmount,
+        uint256 marketingPartnershipAmount,
+        uint256 teamAdvisorsAmount,
+        uint256 charitableFundAmount
+    );
+
+    // ROLES
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
+    // MODIFIERS
+    modifier verifyRole(bytes32 role) {
+        require(
+            hasRole(role, msg.sender),
+            "Caller does not have the required role"
+        );
+        _;
+    }
 
     constructor(
+        address _multisigWallet,
         address _liquidityWallet,
-        address _multisigWallet
-    ) ERC20("CypherPup", "$CPHP") Ownable(msg.sender) Pausable() {
+        address _publicSale,
+        address _communityRewards,
+        address _liquidityPools,
+        address _developmentFund,
+        address _marketingPartnership,
+        address _teamAdvisors,
+        address _charitableFund
+    )
+        ERC20("CypherPup", "$CPHP")
+        Ownable(msg.sender)
+        Pausable()
+        AccessControl()
+    {
+        liquidityWallet = _liquidityWallet;
+        multisigWallet = _multisigWallet;
+        publicSaleWallet = _publicSale;
+        communityRewardsWallet = _communityRewards;
+        liquidityPoolsWallet = _liquidityPools;
+        developmentFundWallet = _developmentFund;
+        marketingPartnershipWallet = _marketingPartnership;
+        teamAdvisorsWallet = _teamAdvisors;
+        charitableFundWallet = _charitableFund;
+
         require(
-            _liquidityWallet != address(0),
-            "Liquidity wallet cannot be zero address"
-        );
-        require(
-            _multisigWallet != address(0),
-            "Multisig wallet cannot be zero address"
+            liquidityWallet != address(0) &&
+                multisigWallet != address(0) &&
+                publicSaleWallet != address(0) &&
+                communityRewardsWallet != address(0) &&
+                liquidityPoolsWallet != address(0) &&
+                developmentFundWallet != address(0) &&
+                marketingPartnershipWallet != address(0) &&
+                teamAdvisorsWallet != address(0) &&
+                charitableFundWallet != address(0),
+            "One or more wallet addresses are invalid"
         );
 
-        liquidityWallet = _liquidityWallet;
         excludedFromFees[msg.sender] = true;
         excludedFromFees[_liquidityWallet] = true;
 
+        // Mint initial supply
         _mint(msg.sender, TOTAL_SUPPLY);
 
         // Transfer ownership to the multisig wallet
         transferOwnership(_multisigWallet);
+        multisigOwner = _multisigWallet;
 
-        // Start contract in Paused state
-        _pause();
+        // Grant roles
+        AccessControl._grantRole(DEFAULT_ADMIN_ROLE, multisigOwner);
+        AccessControl._grantRole(MINTER_ROLE, _multisigWallet);
+        AccessControl._grantRole(ADMIN_ROLE, _multisigWallet);
     }
 
+    function mintAndDistribute(uint256 amount) external onlyRole(MINTER_ROLE) {
+        require(amount > 0, "Mint amount must be greater than 0");
+
+        // Mint tokens to the contract first
+        _mint(address(this), amount);
+
+        // Ensure contract has enough tokens for distribution
+        require(
+            balanceOf(address(this)) >= amount,
+            "Insufficient contract balance for distribution"
+        );
+
+        // Calculate distribution amounts
+        uint256 publicSaleAmount = (amount * 40) / 100;
+        uint256 communityRewardsAmount = (amount * 20) / 100;
+        uint256 liquidityPoolsAmount = (amount * 15) / 100;
+        uint256 developmentFundAmount = (amount * 10) / 100;
+        uint256 marketingPartnershipAmount = (amount * 7) / 100;
+        uint256 teamAdvisorsAmount = (amount * 5) / 100;
+        uint256 charitableFundAmount = (amount * 3) / 100;
+
+        // Transfer tokens to respective wallets
+        _transfer(address(this), publicSaleWallet, publicSaleAmount);
+        _transfer(
+            address(this),
+            communityRewardsWallet,
+            communityRewardsAmount
+        );
+        _transfer(address(this), liquidityPoolsWallet, liquidityPoolsAmount);
+        _transfer(address(this), developmentFundWallet, developmentFundAmount);
+        _transfer(
+            address(this),
+            marketingPartnershipWallet,
+            marketingPartnershipAmount
+        );
+        _transfer(address(this), teamAdvisorsWallet, teamAdvisorsAmount);
+        _transfer(address(this), charitableFundWallet, charitableFundAmount);
+
+        emit TokensDistributed(
+            amount,
+            publicSaleAmount,
+            communityRewardsAmount,
+            liquidityPoolsAmount,
+            developmentFundAmount,
+            marketingPartnershipAmount,
+            teamAdvisorsAmount,
+            charitableFundAmount
+        );
+    }
+
+    // Whitelist management functions
+    function addToWhitelist(
+        address account,
+        uint8 category
+    ) external verifyRole(ADMIN_ROLE) {
+        require(account != address(0), "Invalid address");
+        whitelist[account] = category;
+        emit WhitelistUpdated(account, category, true);
+    }
+
+    function removeFromWhitelist(
+        address account
+    ) external verifyRole(ADMIN_ROLE) {
+        require(account != address(0), "Invalid address");
+        delete whitelist[account];
+        emit WhitelistUpdated(account, 0, false); // 0 as no category
+    }
+
+    // SECURITY FUNCTIONS
     modifier antiWhale(
         address from,
         address to,
@@ -51,12 +190,15 @@ contract CypherPup is ERC20, ERC20Burnable, Ownable, Pausable {
     ) {
         if (!excludedFromFees[to]) {
             require(
-                balanceOf(to) + amount <= MAX_WALLET_CAP,
+                balanceOf(to) + amount <= getMaxWalletCap(),
                 "Exceeds max wallet cap"
             );
         }
         if (!excludedFromFees[from]) {
-            require(amount <= TRANSACTION_LIMIT, "Exceeds transaction limit");
+            require(
+                amount <= getTransactionLimit(),
+                "Exceeds transaction limit"
+            );
         }
         _;
     }
@@ -90,25 +232,27 @@ contract CypherPup is ERC20, ERC20Burnable, Ownable, Pausable {
     }
 
     function transfer(
-        address from,
         address to,
         uint256 amount
-    ) public antiWhale(from, to, amount) {
+    ) public override antiWhale(msg.sender, to, amount) returns (bool) {
         uint256 transferAmount = amount;
 
-        if (!excludedFromFees[from] && !excludedFromFees[to] && !paused()) {
+        if (
+            !excludedFromFees[msg.sender] && !excludedFromFees[to] && !paused()
+        ) {
             uint256 fees = (amount * (redistributionFee + burnFee)) /
                 FEE_DENOMINATOR;
             uint256 burnAmount = (amount * burnFee) / FEE_DENOMINATOR;
 
-            super._burn(from, burnAmount);
+            _burn(msg.sender, burnAmount);
             transferAmount = amount - fees;
 
             // Redistribute fees
-            _transfer(from, liquidityWallet, fees - burnAmount);
+            _transfer(msg.sender, liquidityWallet, fees - burnAmount);
         }
 
-        super._transfer(from, to, transferAmount);
+        _transfer(msg.sender, to, transferAmount);
+        return true;
     }
 
     function pause() external onlyOwner {
@@ -119,7 +263,19 @@ contract CypherPup is ERC20, ERC20Burnable, Ownable, Pausable {
         _unpause();
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
+    function mint(address to, uint256 amount) external onlyOwner whenNotPaused {
         _mint(to, amount);
+    }
+
+    function getOwner() external view returns (address) {
+        return owner();
+    }
+
+    function getMaxWalletCap() public view returns (uint256) {
+        return (totalSupply() * 2) / 100; // 2% of total supply
+    }
+
+    function getTransactionLimit() public view returns (uint256) {
+        return (totalSupply() * 5) / 1000; // 0.5% of total supply
     }
 }
