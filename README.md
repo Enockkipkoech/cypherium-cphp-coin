@@ -30,6 +30,7 @@ $ cast --help
 ## CYPHERPUP Documentation - CypherPunk Hackathon Project (CPHP)
 
 (Comming Soon - Documentation) 🔥🔥🔥
+( Front-end - Comming Soon) 🔥🔥🔥
 
 ## Summary
 

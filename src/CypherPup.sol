@@ -11,7 +11,6 @@ contract CypherPup is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl {
     // TOKENOMICS
     uint256 private constant TOTAL_SUPPLY = 50_000_000_000 * 10 ** 18; // 50 billion tokens
     uint256 public constant FEE_DENOMINATOR = 100;
-
     uint256 public redistributionFee = 1; // 1%
     uint256 public burnFee = 1; // 1%
 
@@ -20,6 +19,9 @@ contract CypherPup is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl {
     address public multisigWallet;
     mapping(address => bool) private excludedFromFees;
     address public multisigOwner;
+
+    // LOCK PERIODS
+    uint256 public LiquidityLockPeriod = 365 days;
 
     // WHITELISTS
     mapping(address => uint8) public whitelist;
