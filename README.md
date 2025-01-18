@@ -35,3 +35,9 @@ $ cast --help
 ## Summary
 
 - This contract allows for a decentralized token distribution model with secure and manageable tokenomics. The minting and distribution functions are carefully controlled, and features like fee exclusions, anti-whale mechanisms, and administrative roles provide flexibility for long-term governance.
+
+## REFERENCES
+
+- Deployments
+
+1. https://sepolia.etherscan.io/address/0x9ed2289953557f956ccc0470cff2d033de311bf9
